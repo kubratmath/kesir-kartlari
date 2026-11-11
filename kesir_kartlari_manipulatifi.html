@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kesir Kartları Manipülatifi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #EEF3F8;
+            background-image: 
+                linear-gradient(to right, rgba(30, 58, 95, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(30, 58, 95, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #1E3A5F;
+        }
+
+        .font-math {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .paper-card {
+            background: #ffffff;
+            border: 2px solid #1E3A5F;
+            box-shadow: 4px 5px 0px rgba(30, 58, 95, 0.12);
+            border-radius: 16px;
+        }
+
+        /* Fraction stacked layout */
+        .fraction-display {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 4px;
+            font-weight: 700;
+        }
+
+        .fraction-numerator {
+            border-bottom: 2px solid currentColor;
+            padding: 0 4px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .fraction-denominator {
+            padding: 0 4px;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26A69A;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+
+    <!-- HEADER -->
+    <header class="max-w-6xl w-full mx-auto mb-4">
+        <div class="paper-card p-4 flex items-center justify-between bg-white">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center text-xl font-bold shadow-sm">
+                    <i class="fa-solid fa-shapes"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold text-slate-800">
+                        Kesir Kartları Manipülatifi
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">Model ile Kesirlerde Toplama ve Çıkarma</p>
+                </div>
+            </div>
+
+            <button onclick="resetCards()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i> Kartları Sıfırla
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-6xl w-full mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- CONTROL PANEL (4 Cols) -->
+        <section class="lg:col-span-4 flex flex-col gap-4">
+            
+            <div class="paper-card p-5 space-y-4">
+
+                <!-- OPERATION SELECTOR -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">İşlem</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                        <button id="op-add" onclick="setOperation('+')" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 bg-teal-600 text-white shadow-sm transition">
+                            <i class="fa-solid fa-plus"></i> Toplama (+)
+                        </button>
+                        <button id="op-sub" onclick="setOperation('-')" class="py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-200 transition">
+                            <i class="fa-solid fa-minus"></i> Çıkarma (-)
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- CARD 1 INPUT -->
+                <div class="p-3 bg-teal-50/60 rounded-xl border border-teal-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-teal-900 text-xs flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-teal-500"></span> 1. Kesir Kartı
+                        </span>
+                        <span class="text-xs font-math font-bold px-2 py-0.5 bg-teal-100 text-teal-800 rounded" id="card1-summary">0/1</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-600 font-medium mb-1">Pay</label>
+                            <input type="number" id="num1" min="0" max="12" value="0" onchange="validateAndUpdate()" oninput="validateAndUpdate()"
+                                class="w-full px-3 py-1 rounded-lg border border-teal-300 font-math font-bold text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-500 text-center text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-600 font-medium mb-1">Payda</label>
+                            <input type="number" id="den1" min="1" max="12" value="1" onchange="validateAndUpdate()" oninput="validateAndUpdate()"
+                                class="w-full px-3 py-1 rounded-lg border border-teal-300 font-math font-bold text-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-500 text-center text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 2 INPUT -->
+                <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-amber-900 text-xs flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-amber-500"></span> 2. Kesir Kartı
+                        </span>
+                        <span class="text-xs font-math font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded" id="card2-summary">0/1</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-600 font-medium mb-1">Pay</label>
+                            <input type="number" id="num2" min="0" max="12" value="0" onchange="validateAndUpdate()" oninput="validateAndUpdate()"
+                                class="w-full px-3 py-1 rounded-lg border border-amber-300 font-math font-bold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-center text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-600 font-medium mb-1">Payda</label>
+                            <input type="number" id="den2" min="1" max="12" value="1" onchange="validateAndUpdate()" oninput="validateAndUpdate()"
+                                class="w-full px-3 py-1 rounded-lg border border-amber-300 font-math font-bold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-center text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- VERTICAL DIVISION CONTROL -->
+                <div class="p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-table-columns text-indigo-600"></i> (Parça büyüklüklerini eşitleyelim)
+                        </label>
+                        <button onclick="autoEqualize()" class="text-[11px] px-2 py-0.5 bg-indigo-100 text-indigo-800 hover:bg-indigo-200 rounded font-bold border border-indigo-300 transition">
+                            Eşitle
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="block text-slate-600 font-medium mb-1">Birinci kartı dikey çizgilerle bölelim.</label>
+                            <input type="number" id="vert1" min="1" max="12" value="1" onchange="renderAll()" oninput="renderAll()"
+                                class="w-full px-2 py-1 rounded-lg border border-slate-300 font-math font-bold text-center">
+                        </div>
+                        <div>
+                            <label class="block text-slate-600 font-medium mb-1">İkinci kartı dikey çizgilerle bölelim.</label>
+                            <input type="number" id="vert2" min="1" max="12" value="1" onchange="renderAll()" oninput="renderAll()"
+                                class="w-full px-2 py-1 rounded-lg border border-slate-300 font-math font-bold text-center">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VISUAL DISPLAY PANEL (8 Cols) -->
+        <section class="lg:col-span-8 flex flex-col gap-5">
+
+            <!-- SIDE BY SIDE CARDS -->
+            <div class="paper-card p-5 space-y-4">
+                
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-teal-600"></i> Kesir Kartları
+                    </h2>
+                    
+                    <div id="status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                        Bölünmemiş Dümdüz Kartlar
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-center p-3 bg-slate-50/70 rounded-xl border border-slate-200">
+                    
+                    <!-- CARD 1 DISPLAY -->
+                    <div class="flex flex-col items-center space-y-2 p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between w-full px-1 text-xs font-bold text-teal-800">
+                            <span>1. Kart</span>
+                            <span class="font-math text-sm" id="eq-frac1">0/1</span>
+                        </div>
+                        
+                        <div class="relative w-full max-w-[240px] aspect-square flex items-center justify-center">
+                            <canvas id="canvas1" width="240" height="240" class="w-full h-full rounded-lg border-2 border-teal-600 bg-white"></canvas>
+                        </div>
+
+                        <div class="text-center text-xs text-slate-600 font-medium">
+                            <span id="lbl-squares1" class="font-bold text-teal-700">0/1</span> 
+                            (<span id="lbl-count1">0 boyalı / 1 toplam</span>)
+                        </div>
+                    </div>
+
+                    <!-- CARD 2 DISPLAY -->
+                    <div class="flex flex-col items-center space-y-2 p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between w-full px-1 text-xs font-bold text-amber-800">
+                            <span>2. Kart</span>
+                            <span class="font-math text-sm" id="eq-frac2">0/1</span>
+                        </div>
+                        
+                        <div class="relative w-full max-w-[240px] aspect-square flex items-center justify-center">
+                            <canvas id="canvas2" width="240" height="240" class="w-full h-full rounded-lg border-2 border-amber-600 bg-white"></canvas>
+                        </div>
+
+                        <div class="text-center text-xs text-slate-600 font-medium">
+                            <span id="lbl-squares2" class="font-bold text-amber-700">0/1</span> 
+                            (<span id="lbl-count2">0 boyalı / 1 toplam</span>)
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- RESULT CARD AND EQUATION -->
+            <div class="paper-card p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-equals text-indigo-600"></i> Sonuç Kesir Kartı
+                    </h2>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-around gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    
+                    <!-- RESULT CANVAS -->
+                    <div class="flex flex-col items-center space-y-2">
+                        <div class="relative w-[220px] aspect-square">
+                            <canvas id="canvasResult" width="220" height="220" class="w-full h-full rounded-lg border-2 border-indigo-700 bg-white"></canvas>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-600" id="result-visual-legend">
+                            Sonuç Görseli
+                        </span>
+                    </div>
+
+                    <!-- EQUATION DISPLAY -->
+                    <div class="flex flex-col items-center justify-center space-y-3 max-w-sm w-full">
+                        <div class="p-4 bg-white rounded-xl border border-slate-300 w-full shadow-sm text-center">
+                            <span class="text-[11px] font-bold text-slate-400 block mb-2 uppercase tracking-wider">Matematiksel İşlem</span>
+                            <div class="text-xl font-bold font-math text-slate-900 flex items-center justify-center gap-2" id="full-equation-display">
+                                <!-- Dynamic equation -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="max-w-6xl w-full mx-auto mt-4 text-center text-xs text-slate-400 py-2">
+        Kesir Kartları Manipülatifi
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        let state = {
+            num1: 0,
+            den1: 1,
+            vert1: 1,
+            num2: 0,
+            den2: 1,
+            vert2: 1,
+            op: '+'
+        };
+
+        const el = {
+            num1: document.getElementById('num1'),
+            den1: document.getElementById('den1'),
+            vert1: document.getElementById('vert1'),
+            num2: document.getElementById('num2'),
+            den2: document.getElementById('den2'),
+            vert2: document.getElementById('vert2'),
+            opAdd: document.getElementById('op-add'),
+            opSub: document.getElementById('op-sub'),
+            card1Summary: document.getElementById('card1-summary'),
+            card2Summary: document.getElementById('card2-summary'),
+            lblSquares1: document.getElementById('lbl-squares1'),
+            lblSquares2: document.getElementById('lbl-squares2'),
+            lblCount1: document.getElementById('lbl-count1'),
+            lblCount2: document.getElementById('lbl-count2'),
+            eqFrac1: document.getElementById('eq-frac1'),
+            eqFrac2: document.getElementById('eq-frac2'),
+            statusBadge: document.getElementById('status-badge'),
+            fullEquation: document.getElementById('full-equation-display'),
+            resultVisualLegend: document.getElementById('result-visual-legend'),
+            canvas1: document.getElementById('canvas1'),
+            canvas2: document.getElementById('canvas2'),
+            canvasResult: document.getElementById('canvasResult')
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            validateAndUpdate();
+        });
+
+        function resetCards() {
+            el.num1.value = 0;
+            el.den1.value = 1;
+            el.vert1.value = 1;
+            el.num2.value = 0;
+            el.den2.value = 1;
+            el.vert2.value = 1;
+            setOperation('+');
+            validateAndUpdate();
+        }
+
+        function setOperation(op) {
+            state.op = op;
+            if (op === '+') {
+                el.opAdd.className = "py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 bg-teal-600 text-white shadow-sm transition";
+                el.opSub.className = "py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-200 transition";
+            } else {
+                el.opSub.className = "py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 bg-amber-600 text-white shadow-sm transition";
+                el.opAdd.className = "py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-2 text-slate-600 hover:bg-slate-200 transition";
+            }
+            renderAll();
+        }
+
+        function autoEqualize() {
+            const d1 = parseInt(el.den1.value) || 1;
+            const d2 = parseInt(el.den2.value) || 1;
+            const lcmVal = lcm(d1, d2);
+            el.vert1.value = lcmVal / d1;
+            el.vert2.value = lcmVal / d2;
+            validateAndUpdate();
+        }
+
+        function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+        function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+        function validateAndUpdate() {
+            let n1 = Math.max(0, parseInt(el.num1.value) || 0);
+            let d1 = Math.max(1, parseInt(el.den1.value) || 1);
+            let v1 = Math.max(1, parseInt(el.vert1.value) || 1);
+
+            let n2 = Math.max(0, parseInt(el.num2.value) || 0);
+            let d2 = Math.max(1, parseInt(el.den2.value) || 1);
+            let v2 = Math.max(1, parseInt(el.vert2.value) || 1);
+
+            if (n1 > d1) n1 = d1;
+            if (n2 > d2) n2 = d2;
+
+            el.num1.value = n1;
+            el.den1.value = d1;
+            el.num2.value = n2;
+            el.den2.value = d2;
+
+            state.num1 = n1;
+            state.den1 = d1;
+            state.vert1 = v1;
+            state.num2 = n2;
+            state.den2 = d2;
+            state.vert2 = v2;
+
+            renderAll();
+        }
+
+        function renderAll() {
+            const n1 = state.num1;
+            const d1 = state.den1;
+            const v1 = parseInt(el.vert1.value) || 1;
+
+            const n2 = state.num2;
+            const d2 = state.den2;
+            const v2 = parseInt(el.vert2.value) || 1;
+
+            const total1 = d1 * v1;
+            const shaded1 = n1 * v1;
+
+            const total2 = d2 * v2;
+            const shaded2 = n2 * v2;
+
+            const isEqualized = (total1 === total2);
+            const isInitialState = (d1 === 1 && d2 === 1 && v1 === 1 && v2 === 1);
+
+            el.card1Summary.textContent = `${n1}/${d1}`;
+            el.card2Summary.textContent = `${n2}/${d2}`;
+
+            el.lblSquares1.textContent = `${shaded1}/${total1}`;
+            el.lblSquares2.textContent = `${shaded2}/${total2}`;
+
+            el.lblCount1.textContent = `${shaded1} boyalı / ${total1} toplam`;
+            el.lblCount2.textContent = `${shaded2} boyalı / ${total2} toplam`;
+
+            el.eqFrac1.textContent = `${n1}/${d1}` + (v1 > 1 ? ` = ${shaded1}/${total1}` : '');
+            el.eqFrac2.textContent = `${n2}/${d2}` + (v2 > 1 ? ` = ${shaded2}/${total2}` : '');
+
+            // Update Status Badge
+            if (isInitialState) {
+                el.statusBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300";
+                el.statusBadge.textContent = "Bölünmemiş Dümdüz Kartlar";
+            } else if (isEqualized) {
+                el.statusBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-300 flex items-center gap-1";
+                el.statusBadge.innerHTML = `<i class="fa-solid fa-check"></i> Parça Büyüklükleri Eşit (${total1} Parça)`;
+            } else {
+                el.statusBadge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300";
+                el.statusBadge.textContent = `Parçalar Eşit Değil (${total1} vs ${total2})`;
+            }
+
+            // Draw Cards
+            drawCardCanvas(el.canvas1, d1, v1, n1, '#26A69A');
+            drawCardCanvas(el.canvas2, d2, v2, n2, '#FB8C00');
+
+            // Render Result Card
+            renderResultSection(total1, shaded1, total2, shaded2, isEqualized);
+        }
+
+        function drawCardCanvas(canvas, rows, cols, shadedRows, primaryColor) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Card background (Plain White)
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, w, h);
+
+            const rowH = h / rows;
+            const colW = w / cols;
+
+            // Draw shaded rows
+            for (let r = 0; r < rows; r++) {
+                const isShaded = r < shadedRows;
+                ctx.fillStyle = isShaded ? primaryColor : "#FFFFFF";
+                ctx.fillRect(0, r * rowH, w, rowH);
+            }
+
+            // Draw Horizontal Lines (Only if rows > 1)
+            if (rows > 1) {
+                ctx.strokeStyle = "#1E3A5F";
+                ctx.lineWidth = 3;
+                for (let r = 1; r < rows; r++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, r * rowH);
+                    ctx.lineTo(w, r * rowH);
+                    ctx.stroke();
+                }
+            }
+
+            // Draw Vertical Lines (Only if cols > 1)
+            if (cols > 1) {
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 2;
+                ctx.setLineDash([4, 4]);
+                for (let c = 1; c < cols; c++) {
+                    ctx.beginPath();
+                    ctx.moveTo(c * colW, 0);
+                    ctx.lineTo(c * colW, h);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+            }
+
+            // Outer Frame
+            ctx.strokeStyle = "#1E3A5F";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(0, 0, w, h);
+        }
+
+        function renderResultSection(total1, shaded1, total2, shaded2, isEqualized) {
+            const ctx = el.canvasResult.getContext('2d');
+            const w = el.canvasResult.width;
+            const h = el.canvasResult.height;
+            ctx.clearRect(0, 0, w, h);
+
+            const op = state.op;
+            const n1 = state.num1;
+            const d1 = state.den1;
+            const n2 = state.num2;
+            const d2 = state.den2;
+
+            if (!isEqualized) {
+                ctx.fillStyle = "#F8FAFC";
+                ctx.fillRect(0, 0, w, h);
+
+                ctx.strokeStyle = "#CBD5E1";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, w, h);
+
+                ctx.fillStyle = "#64748B";
+                ctx.font = "bold 12px Inter, sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("Parça büyüklükleri eşit değil!", w / 2, h / 2 - 8);
+                ctx.font = "11px Inter, sans-serif";
+                ctx.fillText("Dikey bölme ile eşitleyin.", w / 2, h / 2 + 10);
+
+                el.fullEquation.innerHTML = `
+                    <div class="fraction-display"><span class="fraction-numerator">${n1}</span><span class="fraction-denominator">${d1}</span></div>
+                    <span>${op}</span>
+                    <div class="fraction-display"><span class="fraction-numerator">${n2}</span><span class="fraction-denominator">${d2}</span></div>
+                    <span>=</span>
+                    <span class="text-amber-600 font-bold">?</span>
+                `;
+                el.resultVisualLegend.textContent = "Payda eşitlemesi bekleniyor";
+                return;
+            }
+
+            const commonDenom = total1;
+            let resultShaded = (op === '+') ? (shaded1 + shaded2) : (shaded1 - shaded2);
+
+            const rows = state.den1;
+            const cols = state.vert1;
+            const rowH = h / rows;
+            const colW = w / cols;
+
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, w, h);
+
+            let currentTile = 0;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const x = c * colW;
+                    const y = r * rowH;
+
+                    if (op === '+') {
+                        if (currentTile < shaded1) {
+                            ctx.fillStyle = "#26A69A";
+                            ctx.fillRect(x, y, colW, rowH);
+                        } else if (currentTile < shaded1 + shaded2) {
+                            ctx.fillStyle = "#FB8C00";
+                            ctx.fillRect(x, y, colW, rowH);
+                        } else {
+                            ctx.fillStyle = "#FFFFFF";
+                            ctx.fillRect(x, y, colW, rowH);
+                        }
+                    } else {
+                        if (currentTile < shaded1 - shaded2) {
+                            ctx.fillStyle = "#26A69A";
+                            ctx.fillRect(x, y, colW, rowH);
+                        } else if (currentTile < shaded1) {
+                            ctx.fillStyle = "#E2E8F0";
+                            ctx.fillRect(x, y, colW, rowH);
+
+                            ctx.strokeStyle = "#EF4444";
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(x + 3, y + 3);
+                            ctx.lineTo(x + colW - 3, y + rowH - 3);
+                            ctx.moveTo(x + colW - 3, y + 3);
+                            ctx.lineTo(x + 3, y + rowH - 3);
+                            ctx.stroke();
+                        } else {
+                            ctx.fillStyle = "#FFFFFF";
+                            ctx.fillRect(x, y, colW, rowH);
+                        }
+                    }
+
+                    if (rows > 1 || cols > 1) {
+                        ctx.strokeStyle = "rgba(30, 58, 95, 0.2)";
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(x, y, colW, rowH);
+                    }
+
+                    currentTile++;
+                }
+            }
+
+            if (rows > 1) {
+                ctx.strokeStyle = "#1E3A5F";
+                ctx.lineWidth = 2.5;
+                for (let r = 1; r < rows; r++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, r * rowH);
+                    ctx.lineTo(w, r * rowH);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.strokeStyle = "#1E3A5F";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(0, 0, w, h);
+
+            el.fullEquation.innerHTML = `
+                <div class="fraction-display"><span class="fraction-numerator">${shaded1}</span><span class="fraction-denominator">${commonDenom}</span></div>
+                <span>${op}</span>
+                <div class="fraction-display"><span class="fraction-numerator">${shaded2}</span><span class="fraction-denominator">${commonDenom}</span></div>
+                <span>=</span>
+                <div class="fraction-display text-indigo-700"><span class="fraction-numerator">${resultShaded}</span><span class="fraction-denominator">${commonDenom}</span></div>
+            `;
+
+            if (op === '+') {
+                el.resultVisualLegend.innerHTML = `Sonuç: <span class="font-bold text-indigo-700">${resultShaded}/${commonDenom}</span>`;
+            } else {
+                el.resultVisualLegend.innerHTML = `Kalan: <span class="font-bold text-indigo-700">${resultShaded}/${commonDenom}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
