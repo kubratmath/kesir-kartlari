@@ -30,6 +30,19 @@
     input[type="number"] {
       -moz-appearance: textfield;
     }
+    @keyframes eqPopIn {
+      0% {
+        opacity: 0;
+        transform: translateX(-6px) scale(0.92);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+    .eq-pop {
+      animation: eqPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
   </style>
 </head>
 <body class="min-h-screen p-4 md:p-6">
@@ -151,6 +164,9 @@
 
               <!-- 1. Kart Görseli -->
               <div id="card1Visual" class="w-56 h-56 sm:w-60 sm:h-60 rounded-xl border-[3px] border-teal-600 bg-white overflow-hidden relative shadow-xs"></div>
+
+              <!-- 1. Kart Alt Kesir Değeri ve Denk Kesir Gösterimi -->
+              <div id="card1ValueLabel" class="min-h-[32px] flex items-center justify-center gap-2 text-base font-extrabold"></div>
             </div>
 
             <!-- 2. Kart -->
@@ -177,6 +193,9 @@
 
               <!-- 2. Kart Görseli -->
               <div id="card2Visual" class="w-56 h-56 sm:w-60 sm:h-60 rounded-xl border-[3px] border-amber-500 bg-white overflow-hidden relative shadow-xs"></div>
+
+              <!-- 2. Kart Alt Kesir Değeri ve Denk Kesir Gösterimi -->
+              <div id="card2ValueLabel" class="min-h-[32px] flex items-center justify-center gap-2 text-base font-extrabold"></div>
             </div>
 
           </div>
@@ -223,6 +242,7 @@
 
   <script>
     let operation = '+';
+    let wasEqualized = false;
 
     function gcd(a, b) {
       a = Math.abs(a);
@@ -273,6 +293,7 @@
       document.getElementById('den2Input').value = 0;
       document.getElementById('v1Input').value = 1;
       document.getElementById('v2Input').value = 1;
+      wasEqualized = false;
       setOperation('+');
     }
 
@@ -286,7 +307,6 @@
       grid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
       grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-      // Boyama alttan yukarıya doğru yapılır
       const startPaintedRow = rows - effectivePainted;
 
       for (let r = 0; r < rows; r++) {
@@ -312,6 +332,8 @@
 
       const card1El = document.getElementById('card1Visual');
       const card2El = document.getElementById('card2Visual');
+      const card1ValueLabel = document.getElementById('card1ValueLabel');
+      const card2ValueLabel = document.getElementById('card2ValueLabel');
       const statusBadge = document.getElementById('statusBadge');
       const resultCardEl = document.getElementById('resultCardVisual');
       const equationSummary = document.getElementById('equationSummary');
@@ -320,6 +342,49 @@
 
       buildCardGrid(card1El, d1, n1, v1, '#5eead4');
       buildCardGrid(card2El, d2, n2, v2, '#fcd34d');
+
+      const eqN1 = n1 * v1;
+      const eqD1 = d1 * v1;
+      const eqN2 = n2 * v2;
+      const eqD2 = d2 * v2;
+
+      const isEqualized = d1 > 0 && d2 > 0 && eqD1 === eqD2;
+      const popClass = (isEqualized && !wasEqualized) ? 'eq-pop' : '';
+      wasEqualized = isEqualized;
+
+      // 1. Kart Alt Kesir Etiketi (Örn: 2/5 -> Parçalar eşitlenince: 2/5 = 8/20)
+      if (d1 > 0) {
+        if (isEqualized && v1 > 1) {
+          card1ValueLabel.innerHTML = `
+            <span class="text-teal-800">${n1}/${d1}</span>
+            <span class="${popClass} inline-flex items-center gap-2">
+              <span class="text-slate-500 font-bold">=</span>
+              <span class="px-2.5 py-0.5 rounded-lg bg-teal-50 text-teal-700 border border-teal-200">${eqN1}/${eqD1}</span>
+            </span>
+          `;
+        } else {
+          card1ValueLabel.innerHTML = `<span class="text-teal-800">${n1}/${d1}</span>`;
+        }
+      } else {
+        card1ValueLabel.innerHTML = '';
+      }
+
+      // 2. Kart Alt Kesir Etiketi (Örn: 1/4 -> Parçalar eşitlenince: 1/4 = 5/20)
+      if (d2 > 0) {
+        if (isEqualized && v2 > 1) {
+          card2ValueLabel.innerHTML = `
+            <span class="text-amber-800">${n2}/${d2}</span>
+            <span class="${popClass} inline-flex items-center gap-2">
+              <span class="text-slate-500 font-bold">=</span>
+              <span class="px-2.5 py-0.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">${eqN2}/${eqD2}</span>
+            </span>
+          `;
+        } else {
+          card2ValueLabel.innerHTML = `<span class="text-amber-800">${n2}/${d2}</span>`;
+        }
+      } else {
+        card2ValueLabel.innerHTML = '';
+      }
 
       if (d1 === 0 && d2 === 0) {
         statusBadge.textContent = 'Bölünmemiş Dümdüz Kartlar';
@@ -335,11 +400,6 @@
         return;
       }
 
-      const eqN1 = n1 * v1;
-      const eqD1 = d1 * v1;
-      const eqN2 = n2 * v2;
-      const eqD2 = d2 * v2;
-
       headerEquation.textContent = `${n1}/${d1} ${operation} ${n2}/${d2} = ?`;
 
       if (eqD1 !== eqD2) {
@@ -354,7 +414,6 @@
         return;
       }
 
-      // Paydalar eşitlendi!
       const totalParts = eqD1;
       if (operation === '-') {
         if (eqN1 < eqN2) {
@@ -373,7 +432,6 @@
         `;
         helperMessage.textContent = `${eqN1} eş parçadan ${eqN2} eş parça çıkarıldığında geriye ${diffParts}/${totalParts} kalır.`;
 
-        // Sonuç kartında kalan parçaları göster
         resultCardEl.innerHTML = '';
         const grid = document.createElement('div');
         grid.className = 'w-full h-full grid';
@@ -388,9 +446,9 @@
           const cell = document.createElement('div');
 
           if (reverseIdx < diffParts) {
-            cell.style.backgroundColor = '#818cf8'; // Kalan miktar
+            cell.style.backgroundColor = '#818cf8';
           } else if (reverseIdx < eqN1) {
-            cell.style.backgroundColor = '#fee2e2'; // Çıkarılan miktar
+            cell.style.backgroundColor = '#fee2e2';
           } else {
             cell.style.backgroundColor = '#ffffff';
           }
@@ -402,7 +460,6 @@
         resultCardEl.appendChild(grid);
 
       } else {
-        // Toplama
         const sumParts = eqN1 + eqN2;
         headerEquation.textContent = `${n1}/${d1} + ${n2}/${d2} = ${sumParts}/${totalParts}`;
         equationSummary.innerHTML = `
@@ -426,9 +483,9 @@
           const cell = document.createElement('div');
 
           if (reverseIdx < eqN1) {
-            cell.style.backgroundColor = '#5eead4'; // 1. karttan gelen
+            cell.style.backgroundColor = '#5eead4';
           } else if (reverseIdx < sumParts) {
-            cell.style.backgroundColor = '#fcd34d'; // 2. karttan gelen
+            cell.style.backgroundColor = '#fcd34d';
           } else {
             cell.style.backgroundColor = '#ffffff';
           }
